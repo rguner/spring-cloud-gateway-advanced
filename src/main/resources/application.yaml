@@ -1,0 +1,61 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: spring-cloud-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: circuitbreaker_route
+              uri: http://localhost:8080
+              predicates:
+                - Path=/status/504
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: sampleCircuitBreaker
+                    fallbackUri: forward:/fallback-circuitbreaker
+                - RewritePath=/status/504, /error-method
+            - id: circuitbreaker_route2
+              uri: http://localhost:8081
+              predicates:
+                - Path=/error-method
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: sampleCircuitBreaker
+                    fallbackUri: forward:/fallback-circuitbreaker
+            - id: retry_test
+              uri: http://localhost:8080
+              predicates:
+                - Path=/status/502
+              filters:
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY
+                    methods: GET,POST
+                    backoff:
+                      firstBackoff: 500ms
+                      maxBackoff: 1000ms
+                      factor: 2
+                      basedOnPreviousValue: false
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      sampleCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
