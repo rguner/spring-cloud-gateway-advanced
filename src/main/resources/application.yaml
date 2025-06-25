@@ -18,7 +18,6 @@ spring:
                   args:
                     name: sampleCircuitBreaker
                     fallbackUri: forward:/fallback-circuitbreaker
-                - RewritePath=/status/504, /error-method
             - id: circuitbreaker_route2
               uri: http://localhost:8081
               predicates:
