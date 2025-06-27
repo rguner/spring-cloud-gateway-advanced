@@ -54,11 +54,31 @@ spring:
                     redis-rate-limiter.replenishRate: 1        # 1 tokens/sec → 60/min
                     redis-rate-limiter.burstCapacity: 60
                     key-resolver: "#{@ipKeyResolver}"
+            - id: cache_response_route
+              uri: http://localhost:8080
+              predicates:
+                - Path=/cache/cache-test/**
+              filters:
+                - StripPrefix=1
+                - LocalResponseCache
+                # - LocalResponseCache=10s,20MB ( overrides the global config )
+          filter:
+            local-response-cache:
+              enabled: true
+              timeToLive: 20m
+              size: 6MB
   data:
     redis:
       host: 10.220.14.125
       port: 6380
-      password: password
+      password: ${REDIS_PASSWORD}
+
+    gateway:
+      filter:
+        local-response-cache:
+          enabled: true
+          timeToLive: 20m
+          size: 6MB
 
 resilience4j:
   circuitbreaker:
